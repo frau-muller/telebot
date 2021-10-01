@@ -1,8 +1,34 @@
-import telebot;
-bot = telebot.TeleBot('2043844414:AAEG8NR2BDKg7OiLwYyrzhZH0uO8AFJ2NMQ');
+from telegram.ext import Updater, InlineQueryHandler, CommandHandler
+from telegram.ext.dispatcher import run_async
+import requests
+import re
 
-@bot.message_handler(commands=['start'])
-def start_message(message):
-    bot.send_message(message.chat.id, 'Привет, ты написал мне /start')
 
-bot.polling()
+def get_url():
+    contents = requests.get('https://random.dog/woof.json').json()
+    url = contents['url']
+    return url
+
+def get_image_url():
+    allowed_extension = ['jpg','jpeg','png']
+    file_extension = ''
+    while file_extension not in allowed_extension:
+        url = get_url()
+        file_extension = re.search("([^.]*)$",url).group(1).lower()
+    return url
+
+@run_async
+def dog(update, context):
+    url = get_image_url()
+    chat_id = update.message.chat_id
+    context.bot.send_photo(chat_id=chat_id, photo=url)
+
+def main():
+    updater = Updater('2043844414:AAEG8NR2BDKg7OiLwYyrzhZH0uO8AFJ2NMQ', use_context=True)
+    dp = updater.dispatcher
+    dp.add_handler(CommandHandler('dog',dog))
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
